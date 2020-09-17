@@ -1,65 +1,146 @@
 const socket = io('/')
 const videoGrid = document.getElementById('video-grid')
 const myPeer = new Peer()
-const peers = {}
-const myVideo = document.createElement('video')
+
+const myVideo = document.createElement(
+  'video'
+)
+
 myVideo.muted = true
 
-navigator.mediaDevices.getUserMedia({
-  video: true,
-  audio: true
-}).then(stream => {
-  addVideoStream(myVideo, stream)
+const peers = {
 
-  myPeer.on('call', call => {
-    call.answer(stream)
-    const video = document.createElement(
-      'video'
+}
+
+navigator.mediaDevices.getUserMedia(
+  {
+    video: true,
+    audio:true
+  }
+).then(
+  (
+    stream
+  ) => {
+    addVideoStream(
+      myVideo,
+      stream
     )
-    call.on(
-      'stream',
+
+    myPeer.on(
+      'call',
       (
-        userVideoStream
+        call
       ) => {
-        addVideoStream(
-          video,
-          userVideoStream
+        call.answer(
+          stream
+        )
+        const video = document.createElement(
+          'video'
+        )
+        call.on(
+          'stream',
+          (
+            userVideoStream
+          ) => {
+            addVideoStream(
+              video,
+              userVideoStream
+            )
+          }
         )
       }
     )
-  })
 
-  socket.on('user-connected', userId => {
-    connectToNewUser(userId, stream)
-  })
-})
+    socket.on(
+      'user-connected',
+      (
+        userId
+      ) => {
+        connectToNewUser(
+          userId,
+          stream
+        )
+      }
+    )
+  }
+)
 
-socket.on('user-disconnected', userId => {
- if (peers[userId]) peers[userId].close()
-})
+socket.on(
+  'user-disconnected',
+  (
+    userId
+  ) => {
+    if (peers[userId]) {
+      peers[userId].close()
+      console.log(
+        "closed",
+        userId
+      )
+    }
+  }
+)
 
-myPeer.on('open', id => {
-  socket.emit('join-room', ROOM_ID, id)
-})
+myPeer.on(
+  'open',
+  (
+    id
+  ) => {
+    socket.emit(
+      'join-room', 
+      ROOM_ID, 
+      id
+    )
+  }
+)
 
+function connectToNewUser(
+  userId,
+  stream
+) {
+  const call = myPeer.call(
+    userId,
+    stream
+  )
+  const video = document.createElement(
+    'video'
+  )
+  call.on(
+    'stream',
+    (
+      userVideoStream
+    ) => {
+      addVideoStream(
+        video,
+        userVideoStream
+      )
+    }
+  )
+  call.on(
+    'close',
+    (
 
-function connectToNewUser(userId, stream) {
-  const call = myPeer.call(userId, stream)
-  const video = document.createElement('video')
-  call.on('stream', userVideoStream => {
-    addVideoStream(video, userVideoStream)
-  })
-  call.on('close', () => {
-    video.remove()
-  })
+    ) => {
+      video.remove()
+    }
+  )
 
   peers[userId] = call
 }
 
-function addVideoStream(video, stream) {
+function addVideoStream(
+  video,
+  stream
+) {
   video.srcObject = stream
-  video.addEventListener('loadedmetadata', () => {
-    video.play()
-  })
-  videoGrid.append(video)
+  video.addEventListener(
+    'loadedmetadata',
+    (
+
+    ) => {
+      video.play()
+    }
+  )
+  videoGrid.append(
+    video
+  )
 }
